@@ -3,9 +3,11 @@
 // ============================================================
 
 let registros        = [];
+let usuarios         = [];
 let filtroFechaInicio = null;
 let filtroFechaFin    = null;
 let unsubscribeListener = null;
+let unsubscribeUsuariosListener = null;
 
 /* ========================= */
 /* INIT                       */
@@ -26,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   iniciarListenerTiempoReal();
-  cargarUsuarios();
+  iniciarListenerUsuarios();
 });
 
 /* ========================= */
@@ -51,6 +53,20 @@ function iniciarListenerTiempoReal() {
     },
     err => {
       console.error("Error en listener Firestore:", err);
+    }
+  );
+}
+
+function iniciarListenerUsuarios() {
+  if (unsubscribeUsuariosListener) unsubscribeUsuariosListener();
+
+  unsubscribeUsuariosListener = db.collection("usuarios").onSnapshot(
+    snapshot => {
+      usuarios = snapshot.docs.map(doc => doc.data());
+      cargarUsuarios();
+    },
+    err => {
+      console.error("Error en listener usuarios:", err);
     }
   );
 }
@@ -450,7 +466,7 @@ async function crearUsuario() {
   if (!ok) return;
 
   limpiarFormularioUsuario();
-  await cargarUsuarios();
+  // El listener de usuarios se actualizará automáticamente
 }
 
 function limpiarFormularioUsuario() {
@@ -459,16 +475,16 @@ function limpiarFormularioUsuario() {
   document.getElementById("u_turno").value    = "";
 }
 
-async function cargarUsuarios() {
+function cargarUsuarios() {
   const search   = (document.getElementById("u_search")?.value || "").trim().toLowerCase();
-  const usuarios = (await obtenerUsuarios()).filter(u =>
+  const usuariosFiltr = usuarios.filter(u =>
     !search || `${u.username} ${u.nombre}`.toLowerCase().includes(search)
   );
   const tabla = document.getElementById("tablaUsuarios");
   if (!tabla) return;
 
   tabla.innerHTML = "";
-  usuarios.forEach(u => {
+  usuariosFiltr.forEach(u => {
     tabla.innerHTML += `
       <tr>
         <td>${u.username}</td>
